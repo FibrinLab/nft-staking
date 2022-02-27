@@ -32,7 +32,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
     mapping(uint256 => Attributes) public alphaNodes;
 
-    event newTokenMinted(uint256 tokenId, Attributes);
+    event newTokenMinted(uint256 tokenId, Attributes, uint256 timeStamp);
 
     event powerChanged(uint256 tokenId, uint256 prevPower, uint256 newPower, uint256 updatedAt);
     event stringAttributeChanged(uint256 tokenId, string attribute, string prevVal, string newVal);
@@ -47,7 +47,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         address marketplaceAddress,
         uint256 startingPower,
         uint256 maxTokens
-    ) ERC721("TestNFT", "ALPHANFT") {
+    ) ERC721("ALPHA Node NFT", "ALPHANodeNFT") {
         powerManager = msg.sender;
         tokenMinter = msg.sender;
         _marketplaceAddress = marketplaceAddress;
@@ -68,7 +68,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         setApprovalForAll(_marketplaceAddress, true);
         assignTokenStartingAttributes(newItemId);
 
-        emit newTokenMinted(newItemId, alphaNodes[newItemId]);
+        emit newTokenMinted(newItemId, alphaNodes[newItemId], block.timestamp);
 
         return newItemId;
     }
@@ -84,8 +84,6 @@ contract ALPHANodeNFT is ERC721URIStorage {
         alphaNodes[tokenId].updated = block.timestamp;
         alphaNodes[tokenId].lastOwnershipTransfer = 0;
         alphaNodes[tokenId].isEarning = false;
-        
-        emit newTokenMinted(tokenId, alphaNodes[tokenId]);
     }
 
     /**
@@ -96,6 +94,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
         uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = power;
+        setLastUpdated(tokenId);
 
         emit powerChanged(tokenId, previousPowerLevel, power, block.timestamp);
     }
@@ -105,6 +104,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
         uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = power;
+        setLastUpdated(tokenId);
 
         emit powerChanged(tokenId, previousPowerLevel, power, block.timestamp);
     }
@@ -112,7 +112,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
     function resetPowerLevel(uint256 tokenId) public powerControlOnly {
         uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = _startingPower;
-
+        setLastUpdated(tokenId);
         emit powerChanged(tokenId, previousPowerLevel, _startingPower, block.timestamp);
     }
 
@@ -123,7 +123,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         string memory previousName = alphaNodes[tokenId].name;
 
         alphaNodes[tokenId].name = name;
-
+        setLastUpdated(tokenId);
         emit stringAttributeChanged(tokenId, "tokenName", previousName, name);
     }
 
@@ -131,7 +131,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         uint256 previousValue = alphaNodes[tokenId].totalPaid;
 
         alphaNodes[tokenId].totalPaid += amount; 
-
+        setLastUpdated(tokenId);
         emit uintAttributeChanged(tokenId, "totalPaid", previousValue, alphaNodes[tokenId].totalPaid);
 
         return alphaNodes[tokenId].totalPaid;
@@ -139,7 +139,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
     function updateIsEarning(bool earningStatus, uint256 tokenId) public attributeManagerOnly {
         alphaNodes[tokenId].isEarning = earningStatus;
-
+        setLastUpdated(tokenId);
         emit boolAttributeChanged(tokenId, "isEarning", !earningStatus, earningStatus);
     }
 
@@ -178,8 +178,15 @@ contract ALPHANodeNFT is ERC721URIStorage {
         _marketplaceAddress = newAddress;
 
         setApprovalForAll(newAddress, true);
-        
+
         emit marketPlaceChanged(oldAddress, newAddress);
+    }
+
+    /**
+    * Private Utils
+     */
+    function setLastUpdated(uint tokenId) private {
+        alphaNodes[tokenId].updated = block.timestamp;
     }
     
     /**
