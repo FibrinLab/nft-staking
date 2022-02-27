@@ -60,7 +60,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
     /**
     * Token Minting.
      */
-    function createToken(string memory tokenURI) public minterOnly totalOrLess returns (uint) {
+    function createToken(string memory tokenURI) public minterOnly lessThanTotal returns (uint) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
         _mint(msg.sender, newItemId);
@@ -192,8 +192,8 @@ contract ALPHANodeNFT is ERC721URIStorage {
     /**
     * Modifiers
      */
-    modifier totalOrLess() {
-        require(_tokenIds.current() <= total, "Can not mint any more of this series.");
+    modifier lessThanTotal() {
+        require(_tokenIds.current() < total, "Can not mint any more of this series.");
         _;
     }
 
