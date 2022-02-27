@@ -66,7 +66,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: AVALANCHE_MAINNET_URL as string,
         enabled: true,
-        blockNumber: 11226731,        
+        blockNumber: 11442930,        
       },
     },
     fuji: {
