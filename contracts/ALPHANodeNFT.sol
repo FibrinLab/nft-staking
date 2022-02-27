@@ -34,11 +34,14 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
     event newTokenMinted(uint256 tokenId, Attributes);
 
-    event powerChanged(uint256 tokenId, uint256 prev, uint256 now, uint256 updatedAt);
+    event powerChanged(uint256 tokenId, uint256 prevPower, uint256 newPower, uint256 updatedAt);
     event stringAttributeChanged(uint256 tokenId, string attribute, string prevVal, string newVal);
     event uintAttributeChanged(uint256 tokenId, string attribute, uint256 prevVal, uint256 newVal);
+    event boolAttributeChanged(uint256 tokenId, string attribute, bool prevVal, bool newVal);
 
     event tokenOwnershipChanged(uint256 tokenId, address prevOwner, address newOwner);
+    event contractManagementChanged(string managementType, address prevAddress, address newAddress);
+    event marketPlaceChanged(address prevAddress, address newAddress);
 
     constructor(
         address marketplaceAddress,
@@ -64,6 +67,9 @@ contract ALPHANodeNFT is ERC721URIStorage {
         _setTokenURI(newItemId, tokenURI);
         setApprovalForAll(_marketplaceAddress, true);
         assignTokenStartingAttributes(newItemId);
+
+        emit newTokenMinted(newItemId, alphaNodes[newItemId]);
+
         return newItemId;
     }
 
@@ -78,6 +84,8 @@ contract ALPHANodeNFT is ERC721URIStorage {
         alphaNodes[tokenId].updated = block.timestamp;
         alphaNodes[tokenId].lastOwnershipTransfer = 0;
         alphaNodes[tokenId].isEarning = false;
+        
+        emit newTokenMinted(tokenId, alphaNodes[tokenId]);
     }
 
     /**
@@ -85,32 +93,54 @@ contract ALPHANodeNFT is ERC721URIStorage {
      */
     function increasePowerLevel(uint256 power, uint256 tokenId) public powerControlOnly {
         require(power > alphaNodes[tokenId].currentPower, "Power can only increase");
+
+        uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = power;
+
+        emit powerChanged(tokenId, previousPowerLevel, power, block.timestamp);
     }
 
     function decreasePowerLevel(uint256 power, uint256 tokenId) public powerControlOnly {
         require(power < alphaNodes[tokenId].currentPower, "Power can only decrease");
+
+        uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = power;
+
+        emit powerChanged(tokenId, previousPowerLevel, power, block.timestamp);
     }
 
     function resetPowerLevel(uint256 tokenId) public powerControlOnly {
+        uint256 previousPowerLevel = alphaNodes[tokenId].currentPower;
         alphaNodes[tokenId].currentPower = _startingPower;
+
+        emit powerChanged(tokenId, previousPowerLevel, _startingPower, block.timestamp);
     }
 
     /**
     * Called by NFT Attribute Manager Contract
      */
     function updateName(string memory name, uint256 tokenId) public attributeManagerOnly {
+        string memory previousName = alphaNodes[tokenId].name;
+
         alphaNodes[tokenId].name = name;
+
+        emit stringAttributeChanged(tokenId, "tokenName", previousName, name);
     }
 
     function updateTotalPaid(uint256 amount, uint256 tokenId) public attributeManagerOnly returns(uint256) {
+        uint256 previousValue = alphaNodes[tokenId].totalPaid;
+
         alphaNodes[tokenId].totalPaid += amount; 
+
+        emit uintAttributeChanged(tokenId, "totalPaid", previousValue, alphaNodes[tokenId].totalPaid);
+
         return alphaNodes[tokenId].totalPaid;
     }
 
     function updateIsEarning(bool earningStatus, uint256 tokenId) public attributeManagerOnly {
         alphaNodes[tokenId].isEarning = earningStatus;
+
+        emit boolAttributeChanged(tokenId, "isEarning", !earningStatus, earningStatus);
     }
 
 
@@ -118,21 +148,38 @@ contract ALPHANodeNFT is ERC721URIStorage {
     * Superadmin Only
      */
     function changeMinter(address newAddress) public superAdminOnly {
+        address oldAddress = tokenMinter;
+
         tokenMinter = newAddress;
+
+        emit contractManagementChanged("tokenMinter", oldAddress, newAddress);
     }
 
     function changeAttributeManager(address newAddress) public superAdminOnly {
+        address oldAddress = attributeManager;
+
         attributeManager = newAddress;
+
+        emit contractManagementChanged("attributeManager", oldAddress, newAddress);
     }
 
     function changePowerManager(address newAddress) public superAdminOnly {
+        address oldAddress = powerManager;
+
         powerManager = newAddress;
+
+        emit contractManagementChanged("powerManager", oldAddress, newAddress);
     }
 
     function changeMarketplaceAddress(address newAddress) public superAdminOnly {
+        address oldAddress = _marketplaceAddress;
+
         setApprovalForAll(_marketplaceAddress, false);
         _marketplaceAddress = newAddress;
+
         setApprovalForAll(newAddress, true);
+        
+        emit marketPlaceChanged(oldAddress, newAddress);
     }
     
     /**
