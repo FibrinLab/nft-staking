@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 interface IMagicGameNFT {
     function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
@@ -38,7 +38,7 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     uint256 public constant MAX_MagicGameNFT_SUPPLY = 10000000000000000000;
 
     // The magicgames contract address
-    address public magicGameNFTContract = 0x7aa2671232e0e4fb689aa92Bbb50e0fAE0bdbC3D;
+    address public magicGameNFTContract;
 
     // Dev address
     address payable public devAddr;
@@ -66,8 +66,9 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     /**
      * @dev Contract constructor
      */
-    constructor() {
+    constructor(address nftToken) {
         devAddr = payable(msg.sender);
+        magicGameNFTContract = nftToken;
     }
 
     /**
