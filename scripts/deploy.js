@@ -20,24 +20,25 @@ async function main() {
     // '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e' // dividend token
   ]
 
-  // const ALPHA = await hre.ethers.getContractFactory('ALPHA');
-  // const AnyPrinter = await hre.ethers.getContractFactory('ALPHAPrinter');
-  const ALPHACompounder = await hre.ethers.getContractFactory('ALPHACompoundManager');
+  const TestNFT = await hre.ethers.getContractFactory('ALPHANodeNFT');
+  
+  const NFTMarketplace = await hre.ethers.getContractFactory('MagicGameMarketplace');
+  
+  const nftContract = await TestNFT.deploy();
 
-  // const contract = await AnyPrinter.deploy();
+  await nftContract.deployed();
 
-  // const contract = await ALPHA.deploy();
+  const marketPlacecontract = await NFTMarketplace.deploy(nftContract.address);
 
-  const contract = await ALPHACompounder.deploy()
+  // console.log("contract deployed to:", contract.address);
 
-  await contract.deployed();
+  // await hre.run("verify:verify", {
+  //   address: contract.address,
+  //   constructorArguments: contractConstuctorArgs
+  // })
 
-  console.log("contract deployed to:", contract.address);
-
-  await hre.run("verify:verify", {
-    address: contract.address,
-    constructorArguments: contractConstuctorArgs
-  })
+  console.log(' NFT contract address : ', nftContract.address)
+  console.log(' marketplace contract address : ', marketPlacecontract.address)
 
 }
 
