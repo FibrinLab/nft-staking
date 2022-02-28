@@ -11,17 +11,17 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.7;
 
-interface IMagicGameNFT {
+interface IalphaNodeNFT {
     function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
     function totalSupply() external view returns (uint256);
 }
 
-contract MagicGameMarketplace is Ownable, ReentrancyGuard {
+contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
 
     struct Offer {
         bool isForSale;
-        uint256 magicGameNFTIndex;
+        uint256 alphaNodeNFTIndex;
         address payable seller;
         uint256 minValue;       // FTM value
         address onlySellTo;     // Specify to sell only to a specific person
@@ -29,16 +29,16 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
 
     struct Bid {
         bool hasBid;
-        uint256 magicGameNFTIndex;
+        uint256 alphaNodeNFTIndex;
         address payable bidder;
         uint256 value;
     }
 
-    // Max supply of MagicGameNFTs
-    uint256 public constant MAX_MagicGameNFT_SUPPLY = 10000000000000000000;
+    // Max supply of alphaNodeNFTs
+    uint256 public constant MAX_ALPHANODE_SUPPLY = 10000; // ten thousand
 
-    // The magicgames contract address
-    address public magicGameNFTContract;
+    // The alphaNodes contract address
+    address public alphaNodeNFTContract;
 
     // Dev address
     address payable public devAddr;
@@ -46,29 +46,29 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     // Royalty fee for devs, 10 === 0.1% fee
     uint256 public royaltyTransactionFee = 500;
 
-    // A record of magicGameNFTs that are offered for sale at a specific price, and optionally to a specific address
-    mapping (uint256 => Offer) public magicGameNFTsOfferedForSale;
+    // A record of alphaNodeNFTs that are offered for sale at a specific price, and optionally to a specific address
+    mapping (uint256 => Offer) public alphaNodeNFTsOfferedForSale;
 
-    // A record of the highest magicGameNFT bid
-    mapping (uint256 => Bid) public magicGameNFTBids;
+    // A record of the highest alphaNodeNFT bid
+    mapping (uint256 => Bid) public alphaNodeNFTBids;
 
     // This creates an array of all pending withdrawals
     mapping (address => uint256) public pendingWithdrawals;
 
     // Events
-    event MagicGameNFTTransfer(address indexed _fromAddress, address indexed _toAddress, uint256 indexed _magicGameNFTIndex);
-    event MagicGameNFTOffered(uint256 indexed _magicGameNFTIndex, uint256 indexed _value, address indexed _toAddress);
-    event MagicGameNFTBidEntered(uint256 indexed _magicGameNFTIndex, uint256 indexed _value, address indexed _fromAddress);
-    event MagicGameNFTBidWithdrawn(uint256 indexed _magicGameNFTIndex, uint256 indexed _value, address indexed _fromAddress);
-    event MagicGameNFTBought(uint256 indexed _magicGameNFTIndex, uint256 _value, address indexed _fromAddress, address indexed _toAddress);
-    event MagicGameNFTRemovedFromMarketplace(uint256 indexed _magicGameNFTIndex);
+    event alphaNodeNFTTransfer(address indexed _fromAddress, address indexed _toAddress, uint256 indexed _alphaNodeNFTIndex);
+    event alphaNodeNFTOffered(uint256 indexed _alphaNodeNFTIndex, uint256 indexed _value, address indexed _toAddress);
+    event alphaNodeNFTBidEntered(uint256 indexed _alphaNodeNFTIndex, uint256 indexed _value, address indexed _fromAddress);
+    event alphaNodeNFTBidWithdrawn(uint256 indexed _alphaNodeNFTIndex, uint256 indexed _value, address indexed _fromAddress);
+    event alphaNodeNFTBought(uint256 indexed _alphaNodeNFTIndex, uint256 _value, address indexed _fromAddress, address indexed _toAddress);
+    event alphaNodeNFTRemovedFromMarketplace(uint256 indexed _alphaNodeNFTIndex);
 
     /**
      * @dev Contract constructor
      */
     constructor(address nftToken) {
         devAddr = payable(msg.sender);
-        magicGameNFTContract = nftToken;
+        alphaNodeNFTContract = nftToken;
     }
 
     /**
@@ -93,70 +93,70 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Transfer ownership of a magicGameNFT to another user without requiring payment
+     * @dev Transfer ownership of a alphaNodeNFT to another user without requiring payment
      */
-    function transferMagicGameNFTWithoutPayment(address payable _to, uint256 _magicGameNFTIndex) public {
-        requireChecks(_magicGameNFTIndex);
+    function transferAlphaNodeNFTWithoutPayment(address payable _to, uint256 _alphaNodeNFTIndex) public {
+        requireChecks(_alphaNodeNFTIndex);
 
-        if (magicGameNFTsOfferedForSale[_magicGameNFTIndex].isForSale) {
-            magicGameNFTNoLongerForSale(_magicGameNFTIndex);
+        if (alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex].isForSale) {
+            alphaNodeNFTNoLongerForSale(_alphaNodeNFTIndex);
         }
 
-        IMagicGameNFT(magicGameNFTContract).safeTransferFrom(msg.sender, _to, _magicGameNFTIndex);
+        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(msg.sender, _to, _alphaNodeNFTIndex);
 
         // Check for the case where there is a bid from the new owner and refund it.
         // Any other bid can stay in place.
-        Bid memory bid = magicGameNFTBids[_magicGameNFTIndex];
+        Bid memory bid = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
         if (bid.bidder == _to) {
             // Kill bid and refund value
             _safeTransferFTM(_to, bid.value);
-            magicGameNFTBids[_magicGameNFTIndex] = Bid(false, _magicGameNFTIndex, payable(address(0)), 0);
+            alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
         }
 
-        emit MagicGameNFTTransfer(msg.sender, _to, _magicGameNFTIndex);
+        emit alphaNodeNFTTransfer(msg.sender, _to, _alphaNodeNFTIndex);
     }
 
     /**
-     * @dev Set a magicGameNFT's for sale offer to false
+     * @dev Set a alphaNodeNFT's for sale offer to false
      */
-    function magicGameNFTNoLongerForSale(uint256 _magicGameNFTIndex) public {
-        requireChecks(_magicGameNFTIndex);
+    function alphaNodeNFTNoLongerForSale(uint256 _alphaNodeNFTIndex) public {
+        requireChecks(_alphaNodeNFTIndex);
 
-        magicGameNFTsOfferedForSale[_magicGameNFTIndex] = Offer(false, _magicGameNFTIndex, payable(msg.sender), 0, address(0));
-        emit MagicGameNFTRemovedFromMarketplace(_magicGameNFTIndex);
+        alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex] = Offer(false, _alphaNodeNFTIndex, payable(msg.sender), 0, address(0));
+        emit alphaNodeNFTRemovedFromMarketplace(_alphaNodeNFTIndex);
     }
 
     /**
-     * @dev Offer a magicGameNFT for sale with a minimum price
+     * @dev Offer a alphaNodeNFT for sale with a minimum price
      */
-    function offerMagicGameNFTForSale(uint256 _magicGameNFTIndex, uint256 _minSalePriceInWei) public {
-        requireChecks(_magicGameNFTIndex);
+    function offerAlphaNodeNFTForSale(uint256 _alphaNodeNFTIndex, uint256 _minSalePriceInWei) public {
+        requireChecks(_alphaNodeNFTIndex);
 
-        magicGameNFTsOfferedForSale[_magicGameNFTIndex] = Offer(true, _magicGameNFTIndex, payable(msg.sender), _minSalePriceInWei, address(0));
-        emit MagicGameNFTOffered(_magicGameNFTIndex, _minSalePriceInWei, address(0));
+        alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex] = Offer(true, _alphaNodeNFTIndex, payable(msg.sender), _minSalePriceInWei, address(0));
+        emit alphaNodeNFTOffered(_alphaNodeNFTIndex, _minSalePriceInWei, address(0));
     }
 
     /**
-     * @dev Offer to sell a magicGameNFT to a specific address
+     * @dev Offer to sell a alphaNodeNFT to a specific address
      */
-    function offerMagicGameNFTForSaleToAddress(uint256 _magicGameNFTIndex, uint256 _minSalePriceInWei, address _toAddress) public {
-        requireChecks(_magicGameNFTIndex);
+    function offerAlphaNodeNFTForSaleToAddress(uint256 _alphaNodeNFTIndex, uint256 _minSalePriceInWei, address _toAddress) public {
+        requireChecks(_alphaNodeNFTIndex);
 
-        magicGameNFTsOfferedForSale[_magicGameNFTIndex] = Offer(true, _magicGameNFTIndex, payable(msg.sender), _minSalePriceInWei, _toAddress);
-        emit MagicGameNFTOffered(_magicGameNFTIndex, _minSalePriceInWei, _toAddress);
+        alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex] = Offer(true, _alphaNodeNFTIndex, payable(msg.sender), _minSalePriceInWei, _toAddress);
+        emit alphaNodeNFTOffered(_alphaNodeNFTIndex, _minSalePriceInWei, _toAddress);
     }
 
     /**
-     * @dev The magicGameNFT buying function
+     * @dev The alphaNodeNFT buying function
      */
-    function buyMagicGameNFT(uint256 _magicGameNFTIndex) payable public nonReentrant {
-        Offer memory offer = magicGameNFTsOfferedForSale[_magicGameNFTIndex];
+    function buyalphaNodeNFT(uint256 _alphaNodeNFTIndex) payable public nonReentrant {
+        Offer memory offer = alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex];
 
-        require(_magicGameNFTIndex <= MAX_MagicGameNFT_SUPPLY, "No magicGameNFT");
+        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
         require(offer.isForSale, "Not for sale");
         require(msg.value >= offer.minValue, "Not enough FTM");
-        require(offer.seller == IERC721(magicGameNFTContract).ownerOf(_magicGameNFTIndex), "Seller not owner");
+        require(offer.seller == IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex), "Seller not owner");
 
         if (offer.onlySellTo != address(0)) {
             require(offer.onlySellTo == msg.sender, "Invalid buyer");
@@ -169,19 +169,19 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
         uint256 paymentAfterFeeRemoved = paymentReceived.sub(royaltyFee);
         pendingWithdrawals[seller] += paymentAfterFeeRemoved;
         _safeTransferFTM(devAddr, royaltyFee);
-        IMagicGameNFT(magicGameNFTContract).safeTransferFrom(seller, msg.sender, _magicGameNFTIndex);
-        magicGameNFTNoLongerForSale(_magicGameNFTIndex);
+        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(seller, msg.sender, _alphaNodeNFTIndex);
+        alphaNodeNFTNoLongerForSale(_alphaNodeNFTIndex);
         
-        emit MagicGameNFTBought(_magicGameNFTIndex, msg.value, seller, msg.sender);
+        emit alphaNodeNFTBought(_alphaNodeNFTIndex, msg.value, seller, msg.sender);
 
         // Check for the case where there is a bid from the new owner and refund it.
         // Any other bid can stay in place.
-        Bid memory bid = magicGameNFTBids[_magicGameNFTIndex];
+        Bid memory bid = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
         if (bid.bidder == msg.sender) {
             // Kill bid and refund value
             _safeTransferFTM(msg.sender, bid.value);
-            magicGameNFTBids[_magicGameNFTIndex] = Bid(false, _magicGameNFTIndex, payable(address(0)), 0);
+            alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
         }
     }
 
@@ -197,14 +197,14 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev Enter a bid for a magicGameNFT
+     * @dev Enter a bid for a alphaNodeNFT
      */
-    function enterBidForMagicGameNFT(uint256 _magicGameNFTIndex) payable public nonReentrant {
-        require(_magicGameNFTIndex <= MAX_MagicGameNFT_SUPPLY, "No magicGameNFT");
-        require(IERC721(magicGameNFTContract).ownerOf(_magicGameNFTIndex) != address(0), "No owner");
+    function enterBidForalphaNodeNFT(uint256 _alphaNodeNFTIndex) payable public nonReentrant {
+        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
+        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
         require(msg.value != 0, "0 bid");
 
-        Bid memory existing = magicGameNFTBids[_magicGameNFTIndex];
+        Bid memory existing = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
         require(msg.value > existing.value, "Low bid");
 
@@ -213,25 +213,25 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
             _safeTransferFTM(existing.bidder, existing.value);
         }
 
-        magicGameNFTBids[_magicGameNFTIndex] = Bid(true, _magicGameNFTIndex, payable(msg.sender), msg.value);
-        emit MagicGameNFTBidEntered(_magicGameNFTIndex, msg.value, msg.sender);
+        alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(true, _alphaNodeNFTIndex, payable(msg.sender), msg.value);
+        emit alphaNodeNFTBidEntered(_alphaNodeNFTIndex, msg.value, msg.sender);
     }
 
     /**
-     * @dev Allows magicGameNFT owner to accept a bid
+     * @dev Allows alphaNodeNFT owner to accept a bid
      */
-    function acceptBidForMagicGameNFT(uint256 _magicGameNFTIndex) public nonReentrant {
-        requireChecks(_magicGameNFTIndex);
+    function acceptBidForalphaNodeNFT(uint256 _alphaNodeNFTIndex) public nonReentrant {
+        requireChecks(_alphaNodeNFTIndex);
 
         address seller = msg.sender;
-        Bid memory bid = magicGameNFTBids[_magicGameNFTIndex];
+        Bid memory bid = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
         require(bid.value > 0, "0 bid");
 
-        IMagicGameNFT(magicGameNFTContract).safeTransferFrom(seller, bid.bidder, _magicGameNFTIndex);
+        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(seller, bid.bidder, _alphaNodeNFTIndex);
 
-        magicGameNFTsOfferedForSale[_magicGameNFTIndex] = Offer(false, _magicGameNFTIndex, bid.bidder, 0, address(0));
-        magicGameNFTBids[_magicGameNFTIndex] = Bid(false, _magicGameNFTIndex, payable(address(0)), 0);
+        alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex] = Offer(false, _alphaNodeNFTIndex, bid.bidder, 0, address(0));
+        alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
 
         uint256 bidAmount = bid.value;
 
@@ -242,22 +242,22 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
         _safeTransferFTM(devAddr, royaltyFee);
         
 
-        emit MagicGameNFTBought(_magicGameNFTIndex, bid.value, seller, bid.bidder);
+        emit alphaNodeNFTBought(_alphaNodeNFTIndex, bid.value, seller, bid.bidder);
     }
 
     /**
-     * @dev Withdraw a bid for a magicGameNFT
+     * @dev Withdraw a bid for a alphaNodeNFT
      */
-    function withdrawBidForMagicGameNFT(uint256 _magicGameNFTIndex) public nonReentrant {
-        require(_magicGameNFTIndex <= MAX_MagicGameNFT_SUPPLY, "No magicGameNFT");
-        require(IERC721(magicGameNFTContract).ownerOf(_magicGameNFTIndex) != address(0), "No owner");
+    function withdrawBidForalphaNodeNFT(uint256 _alphaNodeNFTIndex) public nonReentrant {
+        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
+        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
 
-        Bid memory bid = magicGameNFTBids[_magicGameNFTIndex];
+        Bid memory bid = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
         require(bid.bidder == msg.sender, "Not bidder");
 
-        emit MagicGameNFTBidWithdrawn(_magicGameNFTIndex, bid.value, msg.sender);
-        magicGameNFTBids[_magicGameNFTIndex] = Bid(false, _magicGameNFTIndex, payable(address(0)), 0);
+        emit alphaNodeNFTBidWithdrawn(_alphaNodeNFTIndex, bid.value, msg.sender);
+        alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
 
         // Refund the bid money
         _safeTransferFTM(msg.sender, bid.value);
@@ -266,8 +266,8 @@ contract MagicGameMarketplace is Ownable, ReentrancyGuard {
     /**
      * @dev Require checks to cut down on redundancy
      */
-    function requireChecks(uint256 _magicGameNFTIndex) internal view {
-        require(IERC721(magicGameNFTContract).ownerOf(_magicGameNFTIndex) == msg.sender, "Not owner");
-        require(_magicGameNFTIndex <= MAX_MagicGameNFT_SUPPLY, "No magicGameNFT");
+    function requireChecks(uint256 _alphaNodeNFTIndex) internal view {
+        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) == msg.sender, "Not owner");
+        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
     }
 }

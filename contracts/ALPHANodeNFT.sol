@@ -10,7 +10,8 @@ contract ALPHANodeNFT is ERC721URIStorage {
     Counters.Counter private _tokenIds;
     
     uint256 public total;    
-    uint256 public _startingPower;    
+    uint256 public _startingPower;
+    uint256 public _ownerShipTransferCooldown;    
     
     address public contractOwner;
     address public _marketplaceAddress;
@@ -20,6 +21,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
     address public attributeManager;
     address public superAdmin;
 
+
     struct Attributes {
         string name;
         uint256 currentPower;
@@ -27,8 +29,23 @@ contract ALPHANodeNFT is ERC721URIStorage {
         uint256 created;
         uint256 updated;
         uint256 lastOwnershipTransfer;
+        uint256 ownerShipTransferCooldown;
         bool isEarning;        
     }
+
+    struct OGPurchaseRequirements {
+        address ALPHA;
+        uint256 amountAlpha;
+        bool requiresOG;
+    }
+
+    struct NonOG157PurchaseRequirements {
+        address ALPHA;
+        uint256 amountAlpha;
+        bool requiresOG;
+    }
+
+    mapping(address => bool) private ogHolders;
 
     mapping(uint256 => Attributes) public alphaNodes;
 
@@ -42,11 +59,13 @@ contract ALPHANodeNFT is ERC721URIStorage {
     event tokenOwnershipChanged(uint256 tokenId, address prevOwner, address newOwner);
     event contractManagementChanged(string managementType, address prevAddress, address newAddress);
     event marketPlaceChanged(address prevAddress, address newAddress);
+    event ownerShiptransferCooldownChanged(uint256 prevTime, uint256 newTime);
 
     constructor(
         address marketplaceAddress,
         uint256 startingPower,
-        uint256 maxTokens
+        uint256 maxTokens,
+        uint256 ownerShipTransferCooldown
     ) ERC721("ALPHA Node NFT", "ALPHANodeNFT") {
         powerManager = msg.sender;
         tokenMinter = msg.sender;
@@ -55,6 +74,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         attributeManager = msg.sender;
         superAdmin = msg.sender;
         total = maxTokens;
+        _ownerShipTransferCooldown = ownerShipTransferCooldown * 1 minutes;
     }
 
     /**
@@ -180,6 +200,11 @@ contract ALPHANodeNFT is ERC721URIStorage {
         setApprovalForAll(newAddress, true);
 
         emit marketPlaceChanged(oldAddress, newAddress);
+    }
+
+    function setOwnerShipTransferCooldown(uint256 numMinutes) public superAdminOnly {
+        require(numMinutes > 1, "Number of minutes must be greater than 1");
+        _ownerShipTransferCooldown = numMinutes * 1 minutes;
     }
 
     /**
