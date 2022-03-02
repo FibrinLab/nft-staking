@@ -1,9 +1,7 @@
-import { DividendDistributor } from './../typechain-types/DividendDistributor';
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 const accountAddress = '0x290D41a4A585e4b2EC53C9563363a3F076856e8e'
-const alphaTokenAddress = '0x1f193488738e888aFBE8BFAc271C12F1bE49629D'
 
 describe("Alpha Nodes", function () {
   before(async function() {

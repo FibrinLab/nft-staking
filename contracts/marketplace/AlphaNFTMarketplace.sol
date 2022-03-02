@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.7;
 
-interface IalphaNodeNFT {
+interface IAlphaNodeNFT {
     function safeTransferFrom(address _from, address _to, uint256 _tokenId) external;
     function totalSupply() external view returns (uint256);
 }
@@ -23,7 +23,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         bool isForSale;
         uint256 alphaNodeNFTIndex;
         address payable seller;
-        uint256 minValue;       // FTM value
+        uint256 minValue;       // min starting price
         address onlySellTo;     // Specify to sell only to a specific person
     }
 
@@ -34,17 +34,22 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         uint256 value;
     }
 
+    address public MEDIUM_OF_EXCHANGE;
+
     // Max supply of alphaNodeNFTs
-    uint256 public constant MAX_ALPHANODE_SUPPLY = 10000; // ten thousand
+    uint256 public MAX_NFT_SUPPLY; // set in constructor 
 
     // The alphaNodes contract address
-    address public alphaNodeNFTContract;
+    address public nftContract;
 
     // Dev address
     address payable public devAddr;
 
+    // Royalty Distributor
+    address payable public ROYALTY_DISTRIBUTOR;
+
     // Royalty fee for devs, 10 === 0.1% fee
-    uint256 public royaltyTransactionFee = 500;
+    uint256 public royaltyTransactionFee = 250;
 
     // A record of alphaNodeNFTs that are offered for sale at a specific price, and optionally to a specific address
     mapping (uint256 => Offer) public alphaNodeNFTsOfferedForSale;
@@ -66,16 +71,22 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
     /**
      * @dev Contract constructor
      */
-    constructor(address nftToken) {
+    constructor(
+        address nftToken, 
+        address payable royaltyDistributorAddress,
+        uint256 nftSupply
+        ) {
         devAddr = payable(msg.sender);
-        alphaNodeNFTContract = nftToken;
+        nftContract = nftToken;
+        MAX_NFT_SUPPLY = nftSupply;
+        ROYALTY_DISTRIBUTOR = royaltyDistributorAddress;
     }
 
     /**
      * @dev Withdraw FTM from this contract (callable by owner only)
     */
     function withdrawDevFunds() public onlyOwner nonReentrant {
-        _safeTransferFTM(devAddr, address(this).balance);
+        _safeTransferMediumOfExchange(devAddr, address(this).balance);
     }
 
     /**
@@ -87,7 +98,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
     /**
     * @dev Transfer FTM safely between users
      */
-    function _safeTransferFTM(address to, uint256 value) internal {
+    function _safeTransferMediumOfExchange(address to, uint256 value) internal {
         (bool success, ) = to.call{value: value}("");
         require(success, "TransferHelper: FTM_TRANSFER_FAILED");
     }
@@ -102,7 +113,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
             alphaNodeNFTNoLongerForSale(_alphaNodeNFTIndex);
         }
 
-        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(msg.sender, _to, _alphaNodeNFTIndex);
+        IAlphaNodeNFT(nftContract).safeTransferFrom(msg.sender, _to, _alphaNodeNFTIndex);
 
         // Check for the case where there is a bid from the new owner and refund it.
         // Any other bid can stay in place.
@@ -110,7 +121,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
 
         if (bid.bidder == _to) {
             // Kill bid and refund value
-            _safeTransferFTM(_to, bid.value);
+            _safeTransferMediumOfExchange(_to, bid.value);
             alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
         }
 
@@ -153,10 +164,10 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
     function buyalphaNodeNFT(uint256 _alphaNodeNFTIndex) payable public nonReentrant {
         Offer memory offer = alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex];
 
-        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
+        require(_alphaNodeNFTIndex <= MAX_NFT_SUPPLY, "No alphaNodeNFT");
         require(offer.isForSale, "Not for sale");
-        require(msg.value >= offer.minValue, "Not enough FTM");
-        require(offer.seller == IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex), "Seller not owner");
+        require(msg.value >= offer.minValue, "Offer not high enough.");
+        require(offer.seller == IERC721(nftContract).ownerOf(_alphaNodeNFTIndex), "Seller not owner");
 
         if (offer.onlySellTo != address(0)) {
             require(offer.onlySellTo == msg.sender, "Invalid buyer");
@@ -168,8 +179,8 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         uint256 royaltyFee = paymentReceived.mul(royaltyTransactionFee).div(10000);
         uint256 paymentAfterFeeRemoved = paymentReceived.sub(royaltyFee);
         pendingWithdrawals[seller] += paymentAfterFeeRemoved;
-        _safeTransferFTM(devAddr, royaltyFee);
-        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(seller, msg.sender, _alphaNodeNFTIndex);
+        _safeTransferMediumOfExchange(devAddr, royaltyFee);
+        IAlphaNodeNFT(nftContract).safeTransferFrom(seller, msg.sender, _alphaNodeNFTIndex);
         alphaNodeNFTNoLongerForSale(_alphaNodeNFTIndex);
         
         emit alphaNodeNFTBought(_alphaNodeNFTIndex, msg.value, seller, msg.sender);
@@ -180,7 +191,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
 
         if (bid.bidder == msg.sender) {
             // Kill bid and refund value
-            _safeTransferFTM(msg.sender, bid.value);
+            _safeTransferMediumOfExchange(msg.sender, bid.value);
             alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
         }
     }
@@ -193,15 +204,15 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         // Remember to zero the pending refund before
         // sending to prevent re-entrancy attacks
         pendingWithdrawals[msg.sender] = 0;
-        _safeTransferFTM(msg.sender, amount);
+        _safeTransferMediumOfExchange(msg.sender, amount);
     }
 
     /**
      * @dev Enter a bid for a alphaNodeNFT
      */
     function enterBidForalphaNodeNFT(uint256 _alphaNodeNFTIndex) payable public nonReentrant {
-        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
-        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
+        require(_alphaNodeNFTIndex <= MAX_NFT_SUPPLY, "No alphaNodeNFT");
+        require(IERC721(nftContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
         require(msg.value != 0, "0 bid");
 
         Bid memory existing = alphaNodeNFTBids[_alphaNodeNFTIndex];
@@ -210,7 +221,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
 
         if (existing.value > 0) {
             // Refund the failing bid
-            _safeTransferFTM(existing.bidder, existing.value);
+            _safeTransferMediumOfExchange(existing.bidder, existing.value);
         }
 
         alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(true, _alphaNodeNFTIndex, payable(msg.sender), msg.value);
@@ -228,7 +239,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
 
         require(bid.value > 0, "0 bid");
 
-        IalphaNodeNFT(alphaNodeNFTContract).safeTransferFrom(seller, bid.bidder, _alphaNodeNFTIndex);
+        IAlphaNodeNFT(nftContract).safeTransferFrom(seller, bid.bidder, _alphaNodeNFTIndex);
 
         alphaNodeNFTsOfferedForSale[_alphaNodeNFTIndex] = Offer(false, _alphaNodeNFTIndex, bid.bidder, 0, address(0));
         alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
@@ -239,7 +250,7 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         uint256 paymentAfterFeeRemoved = bidAmount.sub(royaltyFee);
         
         pendingWithdrawals[seller] += paymentAfterFeeRemoved;
-        _safeTransferFTM(devAddr, royaltyFee);
+        _safeTransferMediumOfExchange(devAddr, royaltyFee);
         
 
         emit alphaNodeNFTBought(_alphaNodeNFTIndex, bid.value, seller, bid.bidder);
@@ -249,8 +260,8 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
      * @dev Withdraw a bid for a alphaNodeNFT
      */
     function withdrawBidForalphaNodeNFT(uint256 _alphaNodeNFTIndex) public nonReentrant {
-        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
-        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
+        require(_alphaNodeNFTIndex <= MAX_NFT_SUPPLY, "No alphaNodeNFT");
+        require(IERC721(nftContract).ownerOf(_alphaNodeNFTIndex) != address(0), "No owner");
 
         Bid memory bid = alphaNodeNFTBids[_alphaNodeNFTIndex];
 
@@ -260,14 +271,21 @@ contract AlphaNodesNFTMarketPlace is Ownable, ReentrancyGuard {
         alphaNodeNFTBids[_alphaNodeNFTIndex] = Bid(false, _alphaNodeNFTIndex, payable(address(0)), 0);
 
         // Refund the bid money
-        _safeTransferFTM(msg.sender, bid.value);
+        _safeTransferMediumOfExchange(msg.sender, bid.value);
     }
 
     /**
      * @dev Require checks to cut down on redundancy
      */
     function requireChecks(uint256 _alphaNodeNFTIndex) internal view {
-        require(IERC721(alphaNodeNFTContract).ownerOf(_alphaNodeNFTIndex) == msg.sender, "Not owner");
-        require(_alphaNodeNFTIndex <= MAX_ALPHANODE_SUPPLY, "No alphaNodeNFT");
+        require(IERC721(nftContract).ownerOf(_alphaNodeNFTIndex) == msg.sender, "Not owner");
+        require(_alphaNodeNFTIndex <= MAX_NFT_SUPPLY, "No alphaNodeNFT");
+    }
+
+    /**
+    *  @dev Set Royalty Distributor Address
+     */
+    function setRoyaltyDistributorAddress(address payable newAddress) public onlyOwner nonReentrant {
+        ROYALTY_DISTRIBUTOR = newAddress;
     }
 }

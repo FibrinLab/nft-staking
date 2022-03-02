@@ -21,6 +21,19 @@ contract ALPHANodeNFT is ERC721URIStorage {
     address public attributeManager;
     address public superAdmin;
 
+    struct VanityAttribute {
+        string attributeName;
+        bool enabled;
+        uint256 numericValue;
+        string stringValue;
+    }
+
+    struct GameAttribute {
+        string attributeName;
+        bool enabled;
+        uint256 numericValue;
+        string stringValue;
+    }
 
     struct Attributes {
         string name;
@@ -30,26 +43,22 @@ contract ALPHANodeNFT is ERC721URIStorage {
         uint256 updated;
         uint256 lastOwnershipTransfer;
         uint256 ownerShipTransferCooldown;
+        mapping(string => VanityAttribute) vanityAttributes;
+        mapping(string => GameAttribute) gameAttributes;
         bool isEarning;        
     }
 
-    struct OGPurchaseRequirements {
+    struct PurchaseRequirements {
         address ALPHA;
         uint256 amountAlpha;
-        bool requiresOG;
-    }
-
-    struct NonOG157PurchaseRequirements {
-        address ALPHA;
-        uint256 amountAlpha;
-        bool requiresOG;
-    }
+        bool requiresOg;
+    }     
 
     mapping(address => bool) private ogHolders;
 
     mapping(uint256 => Attributes) public alphaNodes;
 
-    event newTokenMinted(uint256 tokenId, Attributes, uint256 timeStamp);
+    event newTokenMinted(uint256 tokenId, uint256 timeStamp);
 
     event powerChanged(uint256 tokenId, uint256 prevPower, uint256 newPower, uint256 updatedAt);
     event stringAttributeChanged(uint256 tokenId, string attribute, string prevVal, string newVal);
@@ -88,7 +97,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         setApprovalForAll(_marketplaceAddress, true);
         assignTokenStartingAttributes(newItemId);
 
-        emit newTokenMinted(newItemId, alphaNodes[newItemId], block.timestamp);
+        emit newTokenMinted(newItemId, block.timestamp);
 
         return newItemId;
     }
@@ -136,9 +145,7 @@ contract ALPHANodeNFT is ERC721URIStorage {
         emit powerChanged(tokenId, previousPowerLevel, _startingPower, block.timestamp);
     }
 
-    /**
-    * Called by NFT Attribute Manager Contract
-     */
+    
     function updateName(string memory name, uint256 tokenId) public attributeManagerOnly {
         string memory previousName = alphaNodes[tokenId].name;
 
@@ -161,6 +168,16 @@ contract ALPHANodeNFT is ERC721URIStorage {
         alphaNodes[tokenId].isEarning = earningStatus;
         setLastUpdated(tokenId);
         emit boolAttributeChanged(tokenId, "isEarning", !earningStatus, earningStatus);
+    }
+
+    /**
+    *   Marketplace only function, auto sets to not earning if isForSale is true
+     */
+    function setIsForSale(bool isForSale, uint256 tokenId) public marketPlaceOnly {
+        bool previousEarningStatus = alphaNodes[tokenId].isEarning;
+        // set is earning to the inverse of isForSale
+        alphaNodes[tokenId].isEarning = !isForSale;
+        emit boolAttributeChanged(tokenId, "isEarning", previousEarningStatus, alphaNodes[tokenId].isEarning);
     }
 
 
@@ -202,9 +219,20 @@ contract ALPHANodeNFT is ERC721URIStorage {
         emit marketPlaceChanged(oldAddress, newAddress);
     }
 
-    function setOwnerShipTransferCooldown(uint256 numMinutes) public superAdminOnly {
+    /**
+    *   Change global transfer cooldown
+     */
+    function setGlobalOwnerShipTransferCooldown(uint256 numMinutes) public superAdminOnly {
         require(numMinutes > 1, "Number of minutes must be greater than 1");
         _ownerShipTransferCooldown = numMinutes * 1 minutes;
+    }
+
+    /**
+    *   Change transfer cooldown for single token by id
+     */
+    function setOwnerShipTransferCooldownByTokenId(uint256 numMinutes, uint256 tokenId) public superAdminOnly {
+        require(numMinutes > 1, "Number of minutes must be greater than 1");
+        alphaNodes[tokenId].ownerShipTransferCooldown = numMinutes * 1 minutes;
     }
 
     /**
@@ -239,6 +267,11 @@ contract ALPHANodeNFT is ERC721URIStorage {
 
     modifier superAdminOnly() {
         require(msg.sender == superAdmin, "Must be super admin");
+        _;
+    }
+
+    modifier marketPlaceOnly() {
+        require(msg.sender == _marketplaceAddress, "Must be marketplace");
         _;
     }
 }
