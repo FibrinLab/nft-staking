@@ -89,12 +89,20 @@ contract ALPHANodeNFT is ERC721URIStorage {
     /**
     * Token Minting.
      */
-    function createToken(string memory tokenURI) public minterOnly lessThanTotal returns (uint) {
+    function createToken(string memory tokenURI, address nodeCreator) public minterOnly lessThanTotal returns (uint) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        _mint(msg.sender, newItemId);
+        
+        // Nodecreator is passed in from the node creation contract
+        _mint(nodeCreator, newItemId); 
+        
+        // TODO:: where does the JSON metadata get stored? does it all get compiled down to base64 and inline with the image?
         _setTokenURI(newItemId, tokenURI);
+
+        // Set approval for all refers to transfer ownership capabilities
         setApprovalForAll(_marketplaceAddress, true);
+
+        // 
         assignTokenStartingAttributes(newItemId);
 
         emit newTokenMinted(newItemId, block.timestamp);
