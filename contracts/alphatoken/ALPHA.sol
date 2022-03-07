@@ -1,6 +1,12 @@
 /**
 SPDX-License-Identifier: Unlicensed
 */
+
+/***
+*   Currently configured for testnet
+*
+ */
+
 pragma solidity ^0.8.7;
 
 import "../libs/SafeMath.sol";
@@ -20,8 +26,8 @@ contract ALPHA is IBEP20, Auth {
     uint256 public constant MASK = type(uint128).max;
 
     /** Addresses */
-    address USDC = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664;
-    address public WAVAX = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
+    address USDC = 0x6275B63A4eE560004c34431e573314426906cee9;
+    address public WAVAX = 0x1D308089a2D1Ced3f1Ce36B1FcaF815b07217be3;
     address DEAD = 0x000000000000000000000000000000000000dEaD;
     address ZERO = 0x0000000000000000000000000000000000000000;
     address DEAD_NON_CHECKSUM = 0x000000000000000000000000000000000000dEaD;
@@ -100,7 +106,7 @@ contract ALPHA is IBEP20, Auth {
     bool inSwap;
 
     constructor() Auth(msg.sender) {
-        address _router = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        address _router = 0xee4956AB6b5C8Bc91e7bE0678656F29e50093CF6;
         router = IDEXRouter(_router);
         pair = IDEXFactory(router.factory()).createPair(WAVAX, address(this));
         _allowances[address(this)][address(router)] = _totalSupply;
