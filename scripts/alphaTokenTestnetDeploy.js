@@ -20,25 +20,18 @@ async function main() {
     // '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e' // dividend token
   ]
 
-  const TestNFT = await hre.ethers.getContractFactory('ALPHANodeNFT');
+  const ALPHAToken = await hre.ethers.getContractFactory('ALPHA');
+
+  const alphaTokenContract = await ALPHAToken.deploy();
+
+  await alphaTokenContract.deployed();
   
-  const NFTMarketplace = await hre.ethers.getContractFactory('MagicGameMarketplace');
-  
-  const nftContract = await TestNFT.deploy();
+  console.log("contract deployed to:", alphaTokenContract.address);
 
-  await nftContract.deployed();
-
-  const marketPlacecontract = await NFTMarketplace.deploy(nftContract.address);
-
-  // console.log("contract deployed to:", contract.address);
-
-  // await hre.run("verify:verify", {
-  //   address: contract.address,
-  //   constructorArguments: contractConstuctorArgs
-  // })
-
-  console.log(' NFT contract address : ', nftContract.address)
-  console.log(' marketplace contract address : ', marketPlacecontract.address)
+  await hre.run("verify:verify", {
+    address: alphaTokenContract.address,
+    constructorArguments: contractConstuctorArgs
+  })
 
 }
 
@@ -50,3 +43,5 @@ main()
     console.error(error);
     process.exit(1);
   });
+
+//  npx hardhat run --network fuji scripts/alphaTokenTestnetDeploy.js

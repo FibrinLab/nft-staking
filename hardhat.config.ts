@@ -2,9 +2,25 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 
-import { task } from "hardhat/config";
+import { task, subtask } from "hardhat/config";
 import type { HardhatUserConfig } from "hardhat/types";
 import * as dotenv from "dotenv";
+
+
+const {TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS} = require("hardhat/builtin-tasks/task-names")
+
+// remove from compilation as needed
+subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS)
+  .setAction(async (_, __, runSuper) => {
+    const paths = await runSuper();
+
+    return paths
+      
+      .filter((p: string) => !p.endsWith(".test.sol")) // filter out test sol files
+      .filter((p: string) => !p.includes("Example")) // filter out examples 
+      // .filter((p: string) => !p.includes('alphatoken')) // filter out alphatoken files as needed
+      // add any additional filters
+  });
 
 dotenv.config();
 const AVALANCHE_MAINNET_URL = process.env.AVALANCHE_MAINNET_URL;
@@ -66,7 +82,7 @@ const config: HardhatUserConfig = {
       forking: {
         url: AVALANCHE_MAINNET_URL as string,
         enabled: true,
-        blockNumber: 11226731,        
+        blockNumber: 11442930,        
       },
     },
     fuji: {
