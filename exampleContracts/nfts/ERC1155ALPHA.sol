@@ -3,11 +3,21 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
-contract ALPHANodeNFT is ERC721URIStorage {
+import "../helpers/AuthContract.sol";
+
+contract ALPHANodeNFT is ERC1155,  AuthContract {
     using Counters for Counters.Counter;    
     Counters.Counter private _tokenIds;
+
+    uint256 public constant ALPHA_NODE_NFT = 0;
+    uint256 public constant ALPHA_100 = 1;
+    uint256 public constant ALPHA_RONIN = 2;
+    uint256 public constant ALPHA_APEX = 3;
+
+    mapping(uint256 => string) private _uris;
     
     uint256 public total;    
     uint256 public _startingPower;
@@ -20,6 +30,8 @@ contract ALPHANodeNFT is ERC721URIStorage {
     address public tokenMinter;
     address public attributeManager;
     address public superAdmin;
+
+    string private baseTokenURI = 'https://myipfsserver.com/tokens/{id}';
 
     struct VanityAttribute {
         string attributeName;
@@ -75,7 +87,13 @@ contract ALPHANodeNFT is ERC721URIStorage {
         uint256 startingPower,
         uint256 maxTokens,
         uint256 ownerShipTransferCooldown
-    ) ERC721("ALPHA Node NFT", "ALPHANodeNFT") {
+    ) ERC1155("base uri") {
+        
+        _mint(msg.sender, ALPHA_NODE_NFT, 10000 - 157, "");
+        _mint(msg.sender, ALPHA_100, 100, "");
+        _mint(msg.sender, ALPHA_RONIN, 47, "");
+        _mint(msg.sender, ALPHA_APEX, 10, "");
+        
         powerManager = msg.sender;
         tokenMinter = msg.sender;
         _marketplaceAddress = marketplaceAddress;
@@ -84,30 +102,33 @@ contract ALPHANodeNFT is ERC721URIStorage {
         superAdmin = msg.sender;
         total = maxTokens;
         _ownerShipTransferCooldown = ownerShipTransferCooldown * 1 minutes;
+
+         // Set approval for all refers to transfer ownership capabilities
+        setApprovalForAll(_marketplaceAddress, true);
     }
+
+    
 
     /**
     * Token Minting.
      */
-    function createToken(string memory tokenURI, address nodeCreator) public minterOnly lessThanTotal returns (uint) {
+    function createToken(address nodeCreator) public minterOnly lessThanTotal returns (uint) {
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
-        
-        // Nodecreator is passed in from the node creation contract
-        _mint(nodeCreator, newItemId); 
-        
-        // TODO:: where does the JSON metadata get stored? does it all get compiled down to base64 and inline with the image?
-        _setTokenURI(newItemId, tokenURI);
-
-        // Set approval for all refers to transfer ownership capabilities
-        setApprovalForAll(_marketplaceAddress, true);
-
-        // 
+       
         assignTokenStartingAttributes(newItemId);
 
         emit newTokenMinted(newItemId, block.timestamp);
 
         return newItemId;
+    }
+
+    /**
+    *   create the token uri with the base uri and token id, return completed uri
+     */
+    function makeTokenURI(uint256 tokenId) private returns(string memory) {
+        // string manipulation for replacement of the ID string literal identifier with the token id
+        // return the completed uri
     }
 
     /**

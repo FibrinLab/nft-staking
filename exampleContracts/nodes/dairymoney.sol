@@ -683,6 +683,9 @@ contract dairyFarm is Ownable {
         nodeBase = newBase;
     }
 
+    // user first calls approve to allow the node creator 
+
+
     //Node management - Buy - Claim - Bond - User front
     function buyNode(uint256 _amount) external payable {  
         require(isLive, "Platform is offline");
@@ -695,6 +698,10 @@ contract dairyFarm is Ownable {
             farmer = Farmer(true, 0, 0, 0, 0, 0);
             farmersAddresses.push(msg.sender);
         }
+
+        // call the nft mint function 
+        // uint256 nodeId = NFTMINTER.createToken(string memory tokenURI, msg.sender)
+
         uint256 transactionTotal = nodeCost * _amount;
         uint256 toDev = transactionTotal / 10 * devShare;
         uint256 toTreasury = transactionTotal / 10 * treasuryShare;

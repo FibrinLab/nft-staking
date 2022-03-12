@@ -3,7 +3,7 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract AuthContract is Ownable {
+abstract contract AuthContract is Ownable {
     mapping (address => bool) internal authorizations;
 
     constructor() {

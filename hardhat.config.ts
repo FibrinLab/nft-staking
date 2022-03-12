@@ -16,8 +16,9 @@ subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS)
 
     return paths
       
-      .filter((p: string) => !p.endsWith(".test.sol")) // filter out test sol files
-      .filter((p: string) => !p.includes("Example")) // filter out examples 
+      .filter((p: string) => p.includes('AlphaNFT'))
+      //.filter((p: string) => !p.endsWith(".test.sol")) // filter out test sol files
+      //.filter((p: string) => !p.includes("Example")) // filter out examples 
       // .filter((p: string) => !p.includes('alphatoken')) // filter out alphatoken files as needed
       // add any additional filters
   });

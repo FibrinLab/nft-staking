@@ -31,6 +31,7 @@ contract ALPHA is IBEP20, Auth {
     address DEAD = 0x000000000000000000000000000000000000dEaD;
     address ZERO = 0x0000000000000000000000000000000000000000;
     address DEAD_NON_CHECKSUM = 0x000000000000000000000000000000000000dEaD;
+    address _router = 0x5db0735cf88F85E78ed742215090c465979B5006;
 
     /** Token constants */
     string constant _name = "$ALPHA";
@@ -106,7 +107,7 @@ contract ALPHA is IBEP20, Auth {
     bool inSwap;
 
     constructor() Auth(msg.sender) {
-        address _router = 0xee4956AB6b5C8Bc91e7bE0678656F29e50093CF6;
+        
         router = IDEXRouter(_router);
         pair = IDEXFactory(router.factory()).createPair(WAVAX, address(this));
         _allowances[address(this)][address(router)] = _totalSupply;
