@@ -25,10 +25,10 @@ async function main() {
   
   console.log("contract deployed to:", ALPHANFTContract.address);
 
-  await hre.run("verify:verify", {
-    address: ALPHANFTContract.address,
-    constructorArguments: contractConstuctorArgs
-  })
+  // await hre.run("verify:verify", {
+  //   address: ALPHANFTContract.address,
+  //   constructorArguments: contractConstuctorArgs
+  // })
 
 }
 
@@ -41,4 +41,6 @@ main()
     process.exit(1);
   });
 
-//  npx hardhat run --network fuji scripts/alphaNFTDeploy.js
+// npx hardhat run --network fuji scripts/alphaNFTDeploy.js
+// npx hardhat run --network http://127.0.0.1:8545 scripts/alphaNFTDeploy.js
+// npx hardhat run --network localhost scripts/alphaNFTDeploy.js

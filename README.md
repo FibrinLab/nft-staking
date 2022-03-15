@@ -14,7 +14,6 @@ node scripts/sample-script.js
 npx hardhat help
 ```
 
-
 # Important Addresses 
 Addresses for Routers, Tokens, Helper Contracts
 ## Main Net
@@ -35,4 +34,26 @@ Testnet Mock $ALPHA address = 0x60E65a025EF50d4B66AA8b7420Eb017a895ad560
 Swap Alpha for AVAX path:
 ```js
 ["0x325a98F258a5732c7b06555603F6aF5BC1C17F0a", "0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7"]
+```
+
+# Local Testing:
+
+### Metamask setup:
+Set Metamask to localhost:8545 - make sure that the network ID is set to correct for desired network.
+
+```
+AVAX Mainnet: 43114
+```
+
+![image info](./docs/images/metamask-localhost-network.png)
+
+### Start local hardhat fork node of main net:
+
+```
+npx hardhat node --fork https://api.avax.network/ext/bc/C/rpc
+```
+
+### Deploy contracts to local fork:
+```
+npx hardhat run --network localhost
 ```
