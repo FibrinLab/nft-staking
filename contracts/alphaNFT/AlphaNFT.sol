@@ -159,8 +159,6 @@ contract ALPHANFT is
             isEarning: false
         });
         
-        console.log(alphaNodes[newItemId]);
-
         emit newTokenMinted(newItemId, alphaNodes[newItemId], block.timestamp);
 
         return newItemId;

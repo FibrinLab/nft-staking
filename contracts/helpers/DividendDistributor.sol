@@ -8,6 +8,11 @@ import "../interfaces/IBep20.sol";
 import "../interfaces/Idex.sol";
 import "./Auth.sol";
 
+/**
+* @dev Dividend distributor contract for Alpha Token
+ */
+
+
 interface IDividendDistributor {
     function setDistributionCriteria(
         uint256 _minPeriod,
