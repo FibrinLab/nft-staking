@@ -6,6 +6,7 @@ import "../interfaces/IALPHANFT.sol";
 import "../interfaces/IALPHAReward.sol";
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -14,11 +15,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 * @author Akanimoh Osutuk (DocAkan) 
 */
 
-contract nftStaking is IERC20, AccessControl {
+contract nftStaking is AccessControl {
 
     IERC20 public rewardToken;
     IALPHANFT public parentNFT;
-    IALPHARewards public rewardsContract;
+    address public rewardsContract;
+    // IALPHARewards public rewardsContract;
 
     bool initialised;
 
@@ -41,8 +43,14 @@ contract nftStaking is IERC20, AccessControl {
         uint256 rewardsReleased;
     }
 
+    /// @notice Mapping of a staker to its properties
+    mapping(address => Staker) public stakers;
+
     // Role identifier for the Admin Role
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
+    /// @notice Admin update of rewards contract
+    event RewardsTokenUpdated(address indexed oldRewardsToken, address newRewardsToken );
 
     constructor(address minter) {
         _setupRole(ADMIN_ROLE, minter);
@@ -72,9 +80,9 @@ contract nftStaking is IERC20, AccessControl {
     {
         require(hasRole(ADMIN_ROLE, msg.sender), "Caller must be admin");
         require(_addr != address(0));
-        address oldddr = address(rewardsContract);
-        rewardsContract = IALPHARewards(_addr);
-        emit RewardTokenUpdated(oldddr, _addr);
+        address oldaddr = address(rewardsContract);
+        // rewardsContract = IALPHARewards(_addr);
+        emit RewardsTokenUpdated(oldaddr, _addr);
     }
 
 
@@ -98,6 +106,16 @@ contract nftStaking is IERC20, AccessControl {
         external
     {
         _stake(msg.sender, tokenId);
+    }
+
+    function _stake(
+        address _user,
+        uint256 tokenId
+    )
+        internal
+    {
+        Staker storage staker = stakers[_user];
+
     }
 
 }
