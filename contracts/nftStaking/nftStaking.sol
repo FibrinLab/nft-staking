@@ -3,7 +3,7 @@
 pragma solidity ^0.8.7;
 
 import "../interfaces/IALPHANFT.sol";
-import "./AlphaAccessControls.sol";
+import "../interfaces/IALPHAReward.sol";
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,6 +18,7 @@ contract nftStaking is IERC20, AccessControl {
 
     IERC20 public rewardToken;
     IALPHANFT public parentNFT;
+    IALPHARewards public rewardsContract;
 
     bool initialised;
 
@@ -44,6 +45,18 @@ contract nftStaking is IERC20, AccessControl {
         parentNFT = _parentNFT;
         lastUpdateTime = block.timestamp;
         initialised = true;
+    }
+
+
+    function setRewardsContract(
+        address _addr
+    )
+        external
+    {
+        require(hasRole(ADMIN_ROLE, msg.sender), "Caller must be admin");
+        require(_addr != address(0));
+        address oldddr = address(rewardsContract);
+
     }
 
 }
