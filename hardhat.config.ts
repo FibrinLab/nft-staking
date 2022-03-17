@@ -76,33 +76,33 @@ const config: HardhatUserConfig = {
     }
   },
   networks: {
-    hardhat: {
-      chainId: 43114,
-      gasPrice: 225000000000,
-      throwOnTransactionFailures: false,
-      loggingEnabled: true,
-      accounts: [{
-        privateKey: `0x${testingAccount}`,
-        balance: '100000000000000000000000000'
-      }],
-      forking: {
-        url: AVALANCHE_MAINNET_URL as string,
-        enabled: true,
-        blockNumber: 11442930,        
-      },
-    },
-    fuji: {
-      url: 'https://api.avax-test.network/ext/bc/C/rpc',
-      gasPrice: "auto",
-      chainId: 43113,
-      accounts: [`0x${testKey}`]
-    },
-    mainnet: {
-      url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: "auto",
-      chainId: 43114,
-      accounts: [`0x${testKey}`]
-    }
+    // hardhat: {
+    //   chainId: 43114,
+    //   gasPrice: 225000000000,
+    //   throwOnTransactionFailures: false,
+    //   loggingEnabled: true,
+    //   accounts: [{
+    //     privateKey: `0x${testingAccount}`,
+    //     balance: '100000000000000000000000000'
+    //   }],
+    //   forking: {
+    //     url: AVALANCHE_MAINNET_URL as string,
+    //     enabled: true,
+    //     blockNumber: 11442930,        
+    //   },
+    // },
+    // fuji: {
+    //   url: 'https://api.avax-test.network/ext/bc/C/rpc',
+    //   gasPrice: "auto",
+    //   chainId: 43113,
+    //   accounts: [`0x${testKey}`]
+    // },
+    // mainnet: {
+    //   url: 'https://api.avax.network/ext/bc/C/rpc',
+    //   gasPrice: "auto",
+    //   chainId: 43114,
+    //   accounts: [`0x${testKey}`]
+    // }
   }
 };
 
