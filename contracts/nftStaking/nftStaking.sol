@@ -75,7 +75,7 @@ contract nftStaking is IERC20, AccessControl {
         rewardsContract = IALPHARewards(_addr);
         emit RewardTokenUpdated(oldddr, _addr);
     }
-    
+
 
     // @dev Getter functions for the staking contract
     // @dev Gets the amount of tokens staked by the user
@@ -87,6 +87,16 @@ contract nftStaking is IERC20, AccessControl {
         returns (uint256[] memory tokenIds)
     {
         return stakers[_user].tokenIds;
+    }
+
+
+    /// @notice Stake ALPHA NFTS and earn reward tokens
+    function stake(
+        uint256 tokenId
+    )
+        external
+    {
+        _stake(msg.sender, tokenId);
     }
 
 }
