@@ -23,6 +23,7 @@ contract nftStaking is IERC20, AccessControl {
     bool initialised;
 
     uint256 public lastUpdateTime;
+    uint256 public powerLevel;
 
     /**
     @notice Struct to track users and their tokens
