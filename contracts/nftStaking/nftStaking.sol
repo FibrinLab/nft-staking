@@ -6,8 +6,10 @@ import "../interfaces/IALPHANFT.sol";
 import "../interfaces/IALPHARewards.sol";
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+// To be implemented for security purposes
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 /**
 * @title Alpha NFT Staking Contract
@@ -16,17 +18,24 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 */
 
 contract nftStaking is AccessControl {
+    using SafeMath for uint256;
 
-    IERC20 public rewardToken;
-    IALPHANFT public parentNFT;
+    IERC721 public rewardToken;
+    // IALPHANFT public parentNFT;
+
+    // Adopting the OpenZeppelin Implementation
+    IERC721 public parentNFT;
     IALPHARewards public rewardsContract;
 
     bool initialised;
 
+    uint256 public stakedEthTotal;
     uint256 public lastUpdateTime;
     uint256 public powerLevel;
 
     uint256 public rewardsPerTokenPoints;
+
+    uint256 constant pointMultiplier = 10e18;
 
 
     /**
@@ -56,6 +65,7 @@ contract nftStaking is AccessControl {
 
     constructor(address minter) {
         _setupRole(ADMIN_ROLE, minter);
+        // parentNFT = IERC721(0x);
     }
 
     /**
@@ -63,8 +73,8 @@ contract nftStaking is AccessControl {
     */
 
     function initStaking(
-        IERC20 _rewardToken,
-        IALPHANFT _parentNFT
+        IERC721 _rewardToken,
+        IERC721 _parentNFT
     ) external {
         require(!initialised, "Already Initialised");
         require(hasRole(ADMIN_ROLE, msg.sender), "Caller not an admin");
@@ -83,7 +93,7 @@ contract nftStaking is AccessControl {
         require(hasRole(ADMIN_ROLE, msg.sender), "Caller must be admin");
         require(_addr != address(0));
         address oldaddr = address(rewardsContract);
-        // rewardsContract = IALPHARewards(_addr);
+        rewardsContract = IALPHARewards(_addr);
         emit RewardsTokenUpdated(oldaddr, _addr);
     }
 
@@ -118,20 +128,32 @@ contract nftStaking is AccessControl {
     {
         Staker storage staker = stakers[_user];
 
-        // if (staker.balance == 0 && staker.lastRewardPoints == 0) {
-        //     staker.lastRewardPoints = staker.rewardsPerTokenPoints;
-        // }
+        if (staker.balance == 0 && staker.lastRewardPoints == 0 ) {
+            staker.lastRewardPoints = rewardsPerTokenPoints;
+        }
 
         updateReward(_user);
 
     }
 
+    /// @dev Updates the amount of rewards owed for each user before any tokens are moved
     function updateReward(
         address _user
     )
         public
     {
         rewardsContract.updateRewards();
+        /// Review and update the interface contract
+        uint256 parentRewards = rewardsContract.parentRewards(lastUpdateTime, block.timestamp);
+
+        if (stakedEthTotal > 0) {
+            rewardsPerTokenPoints = rewardsPerTokenPoints.add(parentRewards
+            .mul(1e18)
+            .mul(pointMultiplier)
+            .div(stakedEthTotal));
+        }
+
+        lastUpdateTime = block.timestamp;
 
     }
 
