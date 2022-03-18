@@ -3,7 +3,7 @@
 pragma solidity ^0.8.7;
 
 import "../interfaces/IALPHANFT.sol";
-import "../interfaces/IALPHAReward.sol";
+import "../interfaces/IALPHARewards.sol";
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -19,13 +19,15 @@ contract nftStaking is AccessControl {
 
     IERC20 public rewardToken;
     IALPHANFT public parentNFT;
-    address public rewardsContract;
-    // IALPHARewards public rewardsContract;
+    IALPHARewards public rewardsContract;
 
     bool initialised;
 
     uint256 public lastUpdateTime;
     uint256 public powerLevel;
+
+    uint256 public rewardsPerTokenPoints;
+
 
     /**
     @notice Struct to track users and their tokens
@@ -115,6 +117,21 @@ contract nftStaking is AccessControl {
         internal
     {
         Staker storage staker = stakers[_user];
+
+        // if (staker.balance == 0 && staker.lastRewardPoints == 0) {
+        //     staker.lastRewardPoints = staker.rewardsPerTokenPoints;
+        // }
+
+        updateReward(_user);
+
+    }
+
+    function updateReward(
+        address _user
+    )
+        public
+    {
+        rewardsContract.updateRewards();
 
     }
 
