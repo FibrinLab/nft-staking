@@ -15,6 +15,7 @@ interface IALPHANFT {
   function authorize ( address adr ) external;
   function balanceOf ( address owner ) external view returns ( uint256 );
   function baseURI (  ) external view returns ( string memory );
+  function basicSalePrice( uint256 tokenId ) external view returns (uint256);
   function changeAttributeManager ( address newAddress ) external;
   function changeMarketplaceAddress ( address newAddress ) external;
   function changeMinter ( address newAddress ) external;

@@ -20,14 +20,15 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 contract nftStaking is AccessControl {
     using SafeMath for uint256;
 
-    IERC721 public rewardToken;
-    // IALPHANFT public parentNFT;
+    IERC721 public rewardsToken;
+    IALPHANFT public parentNFT;
 
     // Adopting the OpenZeppelin Implementation
-    IERC721 public parentNFT;
+    // IERC721 public parentNFT;
     IALPHARewards public rewardsContract;
 
     bool initialised;
+    bool public tokensClaimable;
 
     uint256 public stakedEthTotal;
     uint256 public lastUpdateTime;
@@ -57,11 +58,20 @@ contract nftStaking is AccessControl {
     /// @notice Mapping of a staker to its properties
     mapping(address => Staker) public stakers;
 
+    /// @notice Mapping from token ID to the owner
+    mapping(uint256 => address) public tokenOwner;
+
     // Role identifier for the Admin Role
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
     /// @notice Admin update of rewards contract
     event RewardsTokenUpdated(address indexed oldRewardsToken, address newRewardsToken );
+
+    /// @notice event emitted when a user has staked a token
+    event Staked(address owner, uint256 amount);
+
+    /// @notice event emitted when a user claims reward
+    event RewardPaid(address owner, uint256 amount);
 
     constructor(address minter) {
         _setupRole(ADMIN_ROLE, minter);
@@ -73,12 +83,12 @@ contract nftStaking is AccessControl {
     */
 
     function initStaking(
-        IERC721 _rewardToken,
-        IERC721 _parentNFT
+        IERC721 _rewardsToken,
+        IALPHANFT _parentNFT
     ) external {
         require(!initialised, "Already Initialised");
         require(hasRole(ADMIN_ROLE, msg.sender), "Caller not an admin");
-        rewardToken = _rewardToken;
+        rewardsToken = _rewardsToken;
         parentNFT = _parentNFT;
         lastUpdateTime = block.timestamp;
         initialised = true;
@@ -122,7 +132,7 @@ contract nftStaking is AccessControl {
 
     function _stake(
         address _user,
-        uint256 tokenId
+        uint256 _tokenId
     )
         internal
     {
@@ -133,6 +143,29 @@ contract nftStaking is AccessControl {
         }
 
         updateReward(_user);
+        uint256 amount = getContribution(_tokenId);
+        staker.balance = staker.balance.add(amount);
+        stakedEthTotal = stakedEthTotal.add(amount);
+        staker.tokenIds.push(_tokenId);
+        staker.tokenIndex[staker.tokenIds.length - 1];
+        tokenOwner[_tokenId] = _user;
+        parentNFT.safeTransferFrom(
+            _user,
+            address(this),
+            _tokenId
+        );
+
+        emit Staked(_user, _tokenId);
+    }
+
+    /// @notice Unstake ALPHA NFTs
+    function unstake(
+        uint256 _tokenId
+    )
+        external
+    {
+        require(tokenOwner[_tokenId] == msg.sender, "Sender must have staked tokenIDs");
+        claimReward(msg.sender);
 
     }
 
@@ -155,6 +188,12 @@ contract nftStaking is AccessControl {
 
         lastUpdateTime = block.timestamp;
         uint256 rewards = rewardsDue(_user);
+
+        Staker storage staker = stakers[_user];
+        if (_user != address(0)) {
+            staker.rewardsEarned = staker.rewardsEarned.add(rewards);
+            staker.lastRewardPoints = rewardsPerTokenPoints; 
+        }
     }
 
 
@@ -172,5 +211,44 @@ contract nftStaking is AccessControl {
             .div(1e18)
             .div(pointMultiplier);
     }
+
+    /// @dev gets the value of a staked NFT
+    function getContribution(
+        uint256 _tokenId
+    )
+        public
+        view
+        returns (uint256)
+    {
+        return parentNFT.basicSalePrice(_tokenId);
+    }
+
+
+    function claimReward(
+        address _user
+    )
+        public
+    {
+        require(tokensClaimable == true, "Cannot be claimed yet");
+        updateReward(_user);
+
+        Staker storage staker = stakers[_user];
+
+        uint256 payableAmount = staker.rewardsEarned.sub(staker.rewardsReleased);
+        staker.rewardsReleased = staker.rewardsReleased.add(payableAmount);
+
+        /// @dev 
+        uint256 rewardBal = rewardsToken.balanceOf(address(this));
+        if (payableAmount > rewardBal) {
+            payableAmount = rewardBal;
+        }
+
+        rewardsToken.transfer(_user, payableAmount);
+        emit RewardPaid(_user, payableAmount);
+    }
+
+    function tokensClaimable() {}
+
+
 
 }
