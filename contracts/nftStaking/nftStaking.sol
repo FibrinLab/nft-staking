@@ -154,7 +154,23 @@ contract nftStaking is AccessControl {
         }
 
         lastUpdateTime = block.timestamp;
+        uint256 rewards = rewardsDue(_user);
+    }
 
+
+    /// @notice Returns the rewards due for a user
+    /// @dev This gets the rewards from each of the periods as one multiplier
+    function rewardsDue(
+        address _user
+    )
+        public
+        view
+        returns(uint256)
+    {
+        uint256 newRewardPerToken = rewardsPerTokenPoints.sub(stakers[_user].lastRewardPoints);
+        uint256 rewards = stakers[_user].balance.mul(newRewardPerToken)
+            .div(1e18)
+            .div(pointMultiplier);
     }
 
 }
