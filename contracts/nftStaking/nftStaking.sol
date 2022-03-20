@@ -6,7 +6,8 @@ import "../interfaces/IALPHANFT.sol";
 import "../interfaces/IALPHARewards.sol";
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 // To be implemented for security purposes
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -20,7 +21,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 contract nftStaking is AccessControl {
     using SafeMath for uint256;
 
-    IERC721 public rewardsToken;
+    IERC20 public rewardsToken;
     IALPHANFT public parentNFT;
 
     // Adopting the OpenZeppelin Implementation
@@ -83,7 +84,7 @@ contract nftStaking is AccessControl {
     */
 
     function initStaking(
-        IERC721 _rewardsToken,
+        IERC20 _rewardsToken,
         IALPHANFT _parentNFT
     ) external {
         require(!initialised, "Already Initialised");
@@ -246,9 +247,5 @@ contract nftStaking is AccessControl {
         rewardsToken.transfer(_user, payableAmount);
         emit RewardPaid(_user, payableAmount);
     }
-
-    function tokensClaimable() {}
-
-
 
 }
