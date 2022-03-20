@@ -71,6 +71,9 @@ contract nftStaking is AccessControl {
     /// @notice event emitted when a user has staked a token
     event Staked(address owner, uint256 amount);
 
+    /// @notice event emitted when a user has unstaked a token
+    event Unstaked(address owner, uint256 amount);
+
     /// @notice event emitted when a user claims reward
     event RewardPaid(address owner, uint256 amount);
 
@@ -167,7 +170,49 @@ contract nftStaking is AccessControl {
     {
         require(tokenOwner[_tokenId] == msg.sender, "Sender must have staked tokenIDs");
         claimReward(msg.sender);
+        _unstake(msg.sender, _tokenId);
+    }
 
+
+    /**
+     * @dev All the unstaking goes through this function
+     * @dev Rewards to be given out is calculated
+     * @dev Balance of stakers are updated as they unstake the nfts based on ether price
+     */
+    function _unstake(
+        address _user, 
+        uint256 _tokenId
+    )
+        internal
+    {
+        Staker storage staker = stakers[_user];
+        uint256 amount = getContribution(_tokenId);
+        staker.balance = staker.balance.sub(amount);
+        stakedEthTotal = stakedEthTotal.sub(amount);
+
+        uint256 lastIndex = staker.tokenIds.length - 1;
+        uint256 lastIndexKey = staker.tokenIds[lastIndex];
+        uint256 tokenIdIndex = staker.tokenIndex[_tokenId];
+
+        staker.tokenIds[tokenIdIndex] = lastIndexKey;
+        staker.tokenIndex[lastIndexKey] = tokenIdIndex;
+        if (staker.tokenIds.length > 0) {
+            staker.tokenIds.pop();
+            delete staker.tokenIndex[_tokenId];
+        }
+
+        if (staker.balance == 0) {
+            delete stakers[_user];
+        }
+        delete tokenOwner[_tokenId];
+
+        parentNFT.safeTransferFrom(
+            address(this), 
+            _user, 
+            _tokenId
+        );
+
+        emit Unstaked(_user, _tokenId);
     }
 
     /// @dev Updates the amount of rewards owed for each user before any tokens are moved
