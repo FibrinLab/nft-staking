@@ -92,12 +92,13 @@ const config: HardhatUserConfig = {
     //     blockNumber: 11442930,        
     //   },
     // },
-    // fuji: {
-    //   url: 'https://api.avax-test.network/ext/bc/C/rpc',
-    //   gasPrice: "auto",
-    //   chainId: 43113,
-    //   accounts: [`0x${testKey}`]
-    // },
+    fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: "auto",
+      chainId: 43113,
+      accounts: [`0xe783d9766dfacd91f387fa9a738c6144e7c758f476a6deef83354b247bc55b7b`]
+      // accounts: [`0x${testKey}`]
+    },
     // mainnet: {
     //   url: 'https://api.avax.network/ext/bc/C/rpc',
     //   gasPrice: "auto",
