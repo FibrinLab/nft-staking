@@ -75,7 +75,10 @@ contract nftStaking is AccessControl {
     event Unstaked(address owner, uint256 amount);
 
     /// @notice event emitted when a user claims reward
-    event RewardPaid(address owner, uint256 amount);
+    event RewardPaid(address user, uint256 amount);
+
+    /// @notice Emergency unstake tokens without rewards
+    event EmergencyUnstake(address indexed user, uint256 tokenId);
 
     constructor(address minter) {
         _setupRole(ADMIN_ROLE, minter);
@@ -291,6 +294,18 @@ contract nftStaking is AccessControl {
 
         rewardsToken.transfer(_user, payableAmount);
         emit RewardPaid(_user, payableAmount);
+    }
+
+
+    // Unstake without caring about rewards. EMERGENCY ONLY.
+    function emergencyUnstake(uint256 _tokenId) public {
+        require(
+            tokenOwner[_tokenId] == msg.sender,
+            "Sender must have staked tokenID"
+        );
+        _unstake(msg.sender, _tokenId);
+        emit EmergencyUnstake(msg.sender, _tokenId);
+
     }
 
 }
