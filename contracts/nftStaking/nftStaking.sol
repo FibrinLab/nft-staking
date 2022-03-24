@@ -80,8 +80,8 @@ contract nftStaking is AccessControl {
     /// @notice Emergency unstake tokens without rewards
     event EmergencyUnstake(address indexed user, uint256 tokenId);
 
-    constructor(address minter) {
-        _setupRole(ADMIN_ROLE, minter);
+    constructor() {
+        grantRole(ADMIN_ROLE, msg.sender);
         // parentNFT = IERC721(0x);
     }
 
