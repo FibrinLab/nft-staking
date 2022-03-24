@@ -81,8 +81,19 @@ contract nftStaking is AccessControl {
     event EmergencyUnstake(address indexed user, uint256 tokenId);
 
     constructor() {
-        grantRole(ADMIN_ROLE, msg.sender);
+        // grantRole(ADMIN_ROLE, msg.sender);
         // parentNFT = IERC721(0x);
+    }
+
+    /**
+    * @dev sets the admin role
+    */
+    function setAdmin(bytes32, address) external {
+        grantRole(ADMIN_ROLE, msg.sender);
+    }
+    
+    function isAdmin(bytes32, address) external view returns(bool) {
+        hasRole(ADMIN_ROLE, msg.sender);
     }
 
     /**
