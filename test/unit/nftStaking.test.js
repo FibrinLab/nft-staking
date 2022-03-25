@@ -1,18 +1,32 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
-const { time } = require("@openzeppelin/test-helpers")
+const { time } = require("@openzeppelin/test-helpers");
+const {
+    isCallTrace,
+  } = require("hardhat/internal/hardhat-network/stack-traces/message-trace");
 
 const ADMIN_ROLE = "ADMIN_ROLE";
 const ddAddress = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
 
 describe("Alpha Staking", function() {
+    let alphaStaking;
+    let ALPHAStaking;
+    let owner;
+    let addr1;
+    let addr2;
+    let minter;
+    let addrs;
+    let ERC20Mock;
+    let NFT;
+    let nft;
+    let stakeToken;
 
-    this.beforeEach("Should verify the admin",async () => {
-        const Staking = await ethers.getContractFactory("nftStaking");
+    beforeEach("Should verify the admin",async () => {
+        ALPHAStaking = await ethers.getContractFactory("alphaStaking");
         [
             owner, 
-            addr1,
-            addr2,
+            // addr1,
+            // addr2,
             minter,
             ...addrs
         ] = await ethers.getSigners();
@@ -20,11 +34,22 @@ describe("Alpha Staking", function() {
         stakeToken = await ERC20Mock.deploy("Alpha", "APL", "10000000000");
         NFT = await ethers.getContractFactory("NFT", minter);
         nft = await NFT.deploy("AlphaNFT", "ANFT");
-        const staking = await Staking.deploy();
-        dstake = await staking.deployed();
+        // const staking = await Staking.deploy();
+        // dstake = await staking.deployed();
 
-        
+        alphaStaking = await ALPHAStaking.deploy(stakeToken.address, nft.address);        
     });
+
+    describe("Deployment", function() {
+        it("Should set the correct owner", async function() {
+            expect(await alphaStaking.owner()).to.equal(owner.address);
+        });
+
+        it("Should set correct state variables", async function () {
+            expect(await alphaStaking.stakeToken()).to.equal(stakeToken.address);
+            expect(await alphaStaking.nft()).to.equal(nft.address);
+        });
+    })
 
     // beforeEach(async function() {
     //     await dstake.grantRole(ADMIN_ROLE, ddAddress);
